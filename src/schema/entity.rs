@@ -138,6 +138,7 @@ where
     E: EntityTrait,
 {
     let mut vec = Vec::new();
+    let table_name = entity.table_ref();
     for column in E::Column::iter() {
         let column_def = column.def();
         if !column_def.indexed {
@@ -149,7 +150,7 @@ where
                 entity.to_string(),
                 column.to_string()
             ))
-            .table(entity)
+            .table(table_name.clone())
             .col(column)
             .to_owned();
         vec.push(stmt)

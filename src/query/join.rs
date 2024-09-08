@@ -10,7 +10,7 @@ where
     E: EntityTrait,
 {
     /// Left Join with a Related Entity.
-    pub fn left_join<R>(self, _: R) -> Self
+    pub fn left_join<R>(self, _: &R) -> Self
     where
         R: EntityTrait,
         E: Related<R>,
@@ -50,7 +50,7 @@ where
         R: EntityTrait,
         E: Related<R>,
     {
-        self.left_join(r).select_also(r)
+        self.left_join(&r).select_also(r)
     }
 
     /// Left Join with a Related Entity and select the related Entity as a `Vec`
@@ -59,7 +59,7 @@ where
         R: EntityTrait,
         E: Related<R>,
     {
-        self.left_join(r).select_with(r)
+        self.left_join(&r).select_with(r)
     }
 
     /// Left Join with a Linked Entity and select both Entity.
@@ -169,7 +169,7 @@ mod tests {
     fn join_1() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(fruit::Entity)
+                .left_join(&fruit::Entity)
                 .build(DbBackend::MySql)
                 .to_string(),
             [
@@ -256,7 +256,7 @@ mod tests {
     fn join_6() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(filling::Entity)
+                .left_join(&filling::Entity)
                 .build(DbBackend::MySql)
                 .to_string(),
             [

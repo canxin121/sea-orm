@@ -1,8 +1,11 @@
 use crate::{
     ColumnTrait, EntityTrait, IdenStatic, Iterable, QueryTrait, Select, SelectTwo, SelectTwoMany,
+    StringIden,
 };
 use core::marker::PhantomData;
-use sea_query::{Alias, ColumnRef, Iden, Order, SeaRc, SelectExpr, SelectStatement, SimpleExpr};
+use sea_query::{
+    Alias, ColumnRef, DynIden, Iden, Order, SeaRc, SelectExpr, SelectStatement, SimpleExpr,
+};
 
 macro_rules! select_def {
     ( $ident: ident, $str: expr ) => {
@@ -81,12 +84,15 @@ where
     }
 
     /// Makes a SELECT operation in conjunction to another relation
-    pub fn select_with<F>(mut self, _: F) -> SelectTwoMany<E, F>
+    pub fn select_with<F>(mut self, entity: F) -> SelectTwoMany<E, F>
     where
         F: EntityTrait,
     {
         self = self.apply_alias(SelectA.as_str());
-        SelectTwoMany::new(self.into_query())
+        SelectTwoMany::new(
+            self.into_query(),
+            SeaRc::new(StringIden(entity.table_name().to_string())),
+        )
     }
 }
 
@@ -117,10 +123,10 @@ where
     E: EntityTrait,
     F: EntityTrait,
 {
-    pub(crate) fn new(query: SelectStatement) -> Self {
+    pub(crate) fn new(query: SelectStatement, table: DynIden) -> Self {
         Self::new_without_prepare(query)
             .prepare_select()
-            .prepare_order_by()
+            .prepare_order_by(table)
     }
 
     pub(crate) fn new_without_prepare(query: SelectStatement) -> Self {
@@ -135,9 +141,9 @@ where
         self
     }
 
-    fn prepare_order_by(mut self) -> Self {
+    fn prepare_order_by(mut self, table: DynIden) -> Self {
         for col in <E::PrimaryKey as Iterable>::iter() {
-            self.query.order_by((E::default(), col), Order::Asc);
+            self.query.order_by((table.clone(), col), Order::Asc);
         }
         self
     }
@@ -179,7 +185,7 @@ mod tests {
     fn select_also_1() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(fruit::Entity)
+                .left_join(&fruit::Entity)
                 .select_also(fruit::Entity)
                 .build(DbBackend::MySql)
                 .to_string(),
@@ -195,7 +201,7 @@ mod tests {
     fn select_with_1() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(fruit::Entity)
+                .left_join(&fruit::Entity)
                 .select_with(fruit::Entity)
                 .build(DbBackend::MySql)
                 .to_string(),
@@ -212,7 +218,7 @@ mod tests {
     fn select_also_2() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(fruit::Entity)
+                .left_join(&fruit::Entity)
                 .select_also(fruit::Entity)
                 .filter(cake::Column::Id.eq(1))
                 .filter(fruit::Column::Id.eq(2))
@@ -231,7 +237,7 @@ mod tests {
     fn select_with_2() {
         assert_eq!(
             cake::Entity::find()
-                .left_join(fruit::Entity)
+                .left_join(&fruit::Entity)
                 .select_with(fruit::Entity)
                 .filter(cake::Column::Id.eq(1))
                 .filter(fruit::Column::Id.eq(2))

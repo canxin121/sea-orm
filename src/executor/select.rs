@@ -434,6 +434,7 @@ where
     ) -> Result<impl Stream<Item = Result<E::Model, DbErr>> + 'b + Send, DbErr>
     where
         C: ConnectionTrait + StreamTrait + Send,
+        <E as EntityTrait>::Model: 'b,
     {
         self.into_model().stream(db).await
     }
@@ -512,6 +513,8 @@ where
     ) -> Result<impl Stream<Item = Result<(E::Model, Option<F::Model>), DbErr>> + 'b, DbErr>
     where
         C: ConnectionTrait + StreamTrait + Send,
+        <F as EntityTrait>::Model: 'b,
+        <E as EntityTrait>::Model: 'b,
     {
         self.into_model().stream(db).await
     }
@@ -575,6 +578,8 @@ where
     ) -> Result<impl Stream<Item = Result<(E::Model, Option<F::Model>), DbErr>> + 'b + Send, DbErr>
     where
         C: ConnectionTrait + StreamTrait + Send,
+        <F as EntityTrait>::Model: 'b,
+        <E as EntityTrait>::Model: 'b,
     {
         self.into_model().stream(db).await
     }

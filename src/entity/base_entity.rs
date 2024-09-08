@@ -13,8 +13,19 @@ pub trait IdenStatic: Iden + Copy + Debug + 'static {
     fn as_str(&self) -> &str;
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+/// A simple wrapper around a string to implement the Iden trait
+pub struct StringIden(pub String);
+
+// Implement Iden for your custom StringIden type
+impl Iden for StringIden {
+    fn unquoted(&self, s: &mut dyn std::fmt::Write) {
+        // Here we simply write the stored string into the formatter
+        write!(s, "{}", self.0).unwrap();
+    }
+}
 /// A Trait for mapping an Entity to a database table
-pub trait EntityName: IdenStatic + Default {
+pub trait EntityName: Default + Iden {
     /// Method to get the name for the schema, defaults to [Option::None] if not set
     fn schema_name(&self) -> Option<&str> {
         None
@@ -36,8 +47,12 @@ pub trait EntityName: IdenStatic + Default {
     /// Get the [TableRef] from invoking the `self.schema_name()`
     fn table_ref(&self) -> TableRef {
         match self.schema_name() {
-            Some(schema) => (Alias::new(schema).into_iden(), self.into_iden()).into_table_ref(),
-            None => self.into_table_ref(),
+            Some(schema) => (
+                Alias::new(schema).into_iden(),
+                StringIden(self.table_name().to_string()).into_iden(),
+            )
+                .into_table_ref(),
+            None => TableRef::Table(StringIden(self.table_name().to_string()).into_iden()),
         }
     }
 }
